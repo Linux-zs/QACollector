@@ -1,0 +1,117 @@
+import { getDB, saveDB } from '../db';
+
+export interface Term {
+  id: number;
+  question: string;
+  answer: string;
+  category: string | null;
+  tags: string;
+  created_by: number;
+  updated_by: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TermWithAuthor extends Term {
+  author_name: string;
+  updater_name: string | null;
+}
+
+function rowToTerm(row: any[]): TermWithAuthor {
+  return {
+    id: row[0] as number,
+    question: row[1] as string,
+    answer: row[2] as string,
+    category: row[3] as string | null,
+    tags: row[4] as string,
+    created_by: row[5] as number,
+    updated_by: row[6] as number | null,
+    created_at: row[7] as string,
+    updated_at: row[8] as string,
+    author_name: row[9] as string,
+    updater_name: row[10] as string | null,
+  };
+}
+
+const SELECT_SQL = `
+  SELECT t.id, t.question, t.answer, t.category, t.tags, t.created_by, t.updated_by,
+         t.created_at, t.updated_at, u1.username, u2.username
+  FROM terms t
+  LEFT JOIN users u1 ON t.created_by = u1.id
+  LEFT JOIN users u2 ON t.updated_by = u2.id
+`;
+
+export const TermModel = {
+  create(question: string, answer: string, category: string | null, tags: string[], createdBy: number): Term {
+    const db = getDB();
+    db.run(
+      'INSERT INTO terms (question, answer, category, tags, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?)',
+      [question, answer, category, JSON.stringify(tags), createdBy, createdBy]
+    );
+    const id = db.exec('SELECT last_insert_rowid()')[0].values[0][0] as number;
+    saveDB();
+    const result = db.exec('SELECT * FROM terms WHERE id = ?', [id]);
+    const vals = result[0].values[0];
+    return {
+      id: vals[0] as number,
+      question: vals[1] as string,
+      answer: vals[2] as string,
+      category: vals[3] as string | null,
+      tags: vals[4] as string,
+      created_by: vals[5] as number,
+      updated_by: vals[6] as number | null,
+      created_at: vals[7] as string,
+      updated_at: vals[8] as string,
+    };
+  },
+
+  findById(id: number): TermWithAuthor | null {
+    const db = getDB();
+    const result = db.exec(`${SELECT_SQL} WHERE t.id = ?`, [id]);
+    if (result.length === 0 || result[0].values.length === 0) return null;
+    return rowToTerm(result[0].values[0]);
+  },
+
+  search(query: string, limit: number = 10): TermWithAuthor[] {
+    const db = getDB();
+    const pattern = `%${query}%`;
+    const result = db.exec(
+      `${SELECT_SQL} WHERE t.question LIKE ? OR t.answer LIKE ? OR t.tags LIKE ? ORDER BY t.updated_at DESC LIMIT ?`,
+      [pattern, pattern, pattern, limit]
+    );
+    if (result.length === 0) return [];
+    return result[0].values.map(rowToTerm);
+  },
+
+  latest(limit: number = 20): TermWithAuthor[] {
+    const db = getDB();
+    const result = db.exec(`${SELECT_SQL} ORDER BY t.created_at DESC LIMIT ?`, [limit]);
+    if (result.length === 0) return [];
+    return result[0].values.map(rowToTerm);
+  },
+
+  update(id: number, question: string, answer: string, category: string | null, tags: string[], updatedBy: number): boolean {
+    const db = getDB();
+    db.run(
+      'UPDATE terms SET question = ?, answer = ?, category = ?, tags = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [question, answer, category, JSON.stringify(tags), updatedBy, id]
+    );
+    const changes = db.getRowsModified();
+    saveDB();
+    return changes > 0;
+  },
+
+  delete(id: number): boolean {
+    const db = getDB();
+    db.run('DELETE FROM terms WHERE id = ?', [id]);
+    const changes = db.getRowsModified();
+    saveDB();
+    return changes > 0;
+  },
+
+  count(): number {
+    const db = getDB();
+    const result = db.exec('SELECT COUNT(*) FROM terms');
+    return result[0].values[0][0] as number;
+  }
+};
