@@ -36,6 +36,27 @@ router.get('/latest', (req, res) => {
   res.json(TermModel.latest(limit));
 });
 
+// Filter terms by category and/or tag
+router.get('/filter', (req, res) => {
+  const { category, tag, limit } = req.query;
+  const lim = Math.min(Number(limit) || 50, 100);
+  res.json(TermModel.filter(
+    category as string || undefined,
+    tag as string || undefined,
+    lim
+  ));
+});
+
+// Get all categories
+router.get('/categories', (req, res) => {
+  res.json(TermModel.getCategories());
+});
+
+// Get all tags
+router.get('/tags', (req, res) => {
+  res.json(TermModel.getTags());
+});
+
 // Get recent search queries for current user
 router.get('/recent-searches', authMiddleware, (req, res) => {
   const db = getDB();

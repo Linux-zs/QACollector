@@ -109,6 +109,47 @@ export const TermModel = {
     return changes > 0;
   },
 
+  filter(category?: string, tag?: string, limit: number = 50): TermWithAuthor[] {
+    const db = getDB();
+    const conditions: string[] = [];
+    const params: any[] = [];
+
+    if (category) {
+      conditions.push('t.category = ?');
+      params.push(category);
+    }
+    if (tag) {
+      conditions.push("t.tags LIKE ?");
+      params.push(`%${tag}%`);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = db.exec(`${SELECT_SQL} ${where} ORDER BY t.updated_at DESC LIMIT ?`, [...params, limit]);
+    if (result.length === 0) return [];
+    return result[0].values.map(rowToTerm);
+  },
+
+  getCategories(): string[] {
+    const db = getDB();
+    const result = db.exec('SELECT DISTINCT category FROM terms WHERE category IS NOT NULL ORDER BY category');
+    if (result.length === 0) return [];
+    return result[0].values.map(row => row[0] as string);
+  },
+
+  getTags(): string[] {
+    const db = getDB();
+    const result = db.exec('SELECT tags FROM terms');
+    if (result.length === 0) return [];
+    const tagSet = new Set<string>();
+    for (const row of result[0].values) {
+      try {
+        const arr = JSON.parse(row[0] as string);
+        if (Array.isArray(arr)) arr.forEach(t => tagSet.add(t));
+      } catch {}
+    }
+    return Array.from(tagSet).sort();
+  },
+
   count(): number {
     const db = getDB();
     const result = db.exec('SELECT COUNT(*) FROM terms');

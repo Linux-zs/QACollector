@@ -34,6 +34,18 @@ export const api = {
 
   getLatestTerms: (limit = 20) => request(`/terms/latest?limit=${limit}`),
 
+  filterTerms: (params: { category?: string; tag?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params.category) qs.set('category', params.category);
+    if (params.tag) qs.set('tag', params.tag);
+    if (params.limit) qs.set('limit', String(params.limit));
+    return request(`/terms/filter?${qs.toString()}`);
+  },
+
+  getCategories: () => request('/terms/categories'),
+
+  getTags: () => request('/terms/tags'),
+
   getRecentSearches: () => request('/terms/recent-searches'),
 
   getTerm: (id: number) => request(`/terms/${id}`),
