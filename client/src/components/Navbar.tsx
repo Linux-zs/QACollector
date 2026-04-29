@@ -18,9 +18,12 @@ export default function Navbar() {
               <Link to="/create" className="text-sm text-gray-600 hover:text-indigo-600">
                 新建词条
               </Link>
+              <Link to="/manage" className="text-sm text-gray-600 hover:text-indigo-600">
+                词条管理
+              </Link>
               {isAdmin && (
                 <Link to="/admin" className="text-sm text-gray-600 hover:text-indigo-600">
-                  管理
+                  用户管理
                 </Link>
               )}
               <span className="text-sm text-gray-500">

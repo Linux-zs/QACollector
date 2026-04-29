@@ -8,6 +8,7 @@ import TermDetailPage from './pages/TermDetailPage';
 import CreateTermPage from './pages/CreateTermPage';
 import EditTermPage from './pages/EditTermPage';
 import AdminPage from './pages/AdminPage';
+import TermsManagePage from './pages/TermsManagePage';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
   const { user, loading } = useAuth();
@@ -34,6 +35,11 @@ export default function App() {
         <Route path="/edit/:id" element={
           <ProtectedRoute>
             <EditTermPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/manage" element={
+          <ProtectedRoute>
+            <TermsManagePage />
           </ProtectedRoute>
         } />
         <Route path="/admin" element={
