@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '../api/client';
 
 interface TermFormProps {
   initialData?: {
@@ -16,8 +17,13 @@ export default function TermForm({ initialData, onSubmit, submitLabel }: TermFor
   const [answer, setAnswer] = useState(initialData?.answer || '');
   const [category, setCategory] = useState(initialData?.category || '');
   const [tagsInput, setTagsInput] = useState(initialData?.tags?.join(', ') || '');
+  const [categories, setCategories] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.getCategories().then(setCategories).catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,9 +73,13 @@ export default function TermForm({ initialData, onSubmit, submitLabel }: TermFor
             type="text"
             value={category}
             onChange={e => setCategory(e.target.value)}
+            list="category-options"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="如：JavaScript、数据库"
           />
+          <datalist id="category-options">
+            {categories.map(cat => <option key={cat} value={cat} />)}
+          </datalist>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">标签（逗号分隔）</label>

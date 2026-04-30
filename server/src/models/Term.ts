@@ -17,6 +17,12 @@ export interface TermWithAuthor extends Term {
   updater_name: string | null;
 }
 
+export interface SearchResult extends TermWithAuthor {
+  matchField: 'question' | 'answer' | 'tags';
+  matchedTags?: string[];
+  matchSnippet?: string;
+}
+
 function rowToTerm(row: any[]): TermWithAuthor {
   return {
     id: row[0] as number,
@@ -72,15 +78,49 @@ export const TermModel = {
     return rowToTerm(result[0].values[0]);
   },
 
-  search(query: string, limit: number = 10): TermWithAuthor[] {
+  search(query: string, limit: number = 10): SearchResult[] {
     const db = getDB();
     const pattern = `%${query}%`;
+    const q = query.toLowerCase();
     const result = db.exec(
-      `${SELECT_SQL} WHERE t.question LIKE ? OR t.answer LIKE ? OR t.tags LIKE ? ORDER BY t.updated_at DESC LIMIT ?`,
-      [pattern, pattern, pattern, limit]
+      `${SELECT_SQL}
+       WHERE t.question LIKE ? OR t.answer LIKE ? OR t.tags LIKE ?
+       ORDER BY
+         CASE WHEN t.question LIKE ? THEN 0 WHEN t.answer LIKE ? THEN 1 ELSE 2 END,
+         t.updated_at DESC
+       LIMIT ?`,
+      [pattern, pattern, pattern, pattern, pattern, limit]
     );
     if (result.length === 0) return [];
-    return result[0].values.map(rowToTerm);
+
+    return result[0].values.map(row => {
+      const term = rowToTerm(row);
+      const questionMatch = term.question.toLowerCase().includes(q);
+      const answerMatch = term.answer.toLowerCase().includes(q);
+      let matchedTags: string[] = [];
+
+      try {
+        const tags: string[] = JSON.parse(term.tags);
+        matchedTags = tags.filter(t => t.toLowerCase().includes(q));
+      } catch {}
+
+      let matchField: 'question' | 'answer' | 'tags';
+      let matchSnippet: string | undefined;
+
+      if (questionMatch) {
+        matchField = 'question';
+      } else if (answerMatch) {
+        matchField = 'answer';
+        const idx = term.answer.toLowerCase().indexOf(q);
+        const start = Math.max(0, idx - 30);
+        const end = Math.min(term.answer.length, idx + query.length + 30);
+        matchSnippet = (start > 0 ? '...' : '') + term.answer.slice(start, end) + (end < term.answer.length ? '...' : '');
+      } else {
+        matchField = 'tags';
+      }
+
+      return { ...term, matchField, matchedTags, matchSnippet };
+    });
   },
 
   latest(limit: number = 20): TermWithAuthor[] {
@@ -109,7 +149,7 @@ export const TermModel = {
     return changes > 0;
   },
 
-  filter(category?: string, tag?: string, limit: number = 50): TermWithAuthor[] {
+  filter(category?: string, tags?: string[], limit: number = 50): TermWithAuthor[] {
     const db = getDB();
     const conditions: string[] = [];
     const params: any[] = [];
@@ -118,9 +158,11 @@ export const TermModel = {
       conditions.push('t.category = ?');
       params.push(category);
     }
-    if (tag) {
-      conditions.push("t.tags LIKE ?");
-      params.push(`%${tag}%`);
+    if (tags && tags.length > 0) {
+      tags.forEach(t => {
+        conditions.push("t.tags LIKE ?");
+        params.push(`%${t}%`);
+      });
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

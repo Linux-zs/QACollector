@@ -71,6 +71,10 @@ export const UserModel = {
 
   delete(id: number): boolean {
     const db = getDB();
+    // Clear foreign key references before deleting
+    db.run('DELETE FROM terms WHERE created_by = ?', [id]);
+    db.run('UPDATE terms SET updated_by = NULL WHERE updated_by = ?', [id]);
+    db.run('DELETE FROM search_history WHERE user_id = ?', [id]);
     db.run('DELETE FROM users WHERE id = ?', [id]);
     const changes = db.getRowsModified();
     saveDB();

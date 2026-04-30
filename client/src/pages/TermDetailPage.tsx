@@ -73,8 +73,13 @@ export default function TermDetailPage() {
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="text-xs text-gray-400">
             <span>创建者: {term.author_name}</span>
-            {term.updater_name && <span className="ml-3">更新者: {term.updater_name}</span>}
             <span className="ml-3">创建于: {new Date(term.created_at).toLocaleDateString('zh-CN')}</span>
+            {term.updater_name && (
+              <>
+                <span className="ml-3">更新者: {term.updater_name}</span>
+                <span className="ml-3">更新于: {new Date(term.updated_at).toLocaleDateString('zh-CN')}</span>
+              </>
+            )}
           </div>
           <div className="flex gap-2">
             {canEdit && (

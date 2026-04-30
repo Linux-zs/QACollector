@@ -36,13 +36,14 @@ router.get('/latest', (req, res) => {
   res.json(TermModel.latest(limit));
 });
 
-// Filter terms by category and/or tag
+// Filter terms by category and/or tags
 router.get('/filter', (req, res) => {
   const { category, tag, limit } = req.query;
   const lim = Math.min(Number(limit) || 50, 100);
+  const tags = tag ? (Array.isArray(tag) ? tag as string[] : [tag as string]) : undefined;
   res.json(TermModel.filter(
     category as string || undefined,
-    tag as string || undefined,
+    tags,
     lim
   ));
 });
@@ -66,6 +67,14 @@ router.get('/recent-searches', authMiddleware, (req, res) => {
   );
   if (result.length === 0) return res.json([]);
   res.json(result[0].values.map(row => row[0]));
+});
+
+// Delete a recent search query for current user
+router.delete('/recent-searches/:query', authMiddleware, (req, res) => {
+  const db = getDB();
+  db.run('DELETE FROM search_history WHERE user_id = ? AND query = ?', [req.user!.userId, req.params.query]);
+  saveDB();
+  res.json({ success: true });
 });
 
 // Get single term

@@ -15,9 +15,6 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <Link to="/create" className="text-sm text-gray-600 hover:text-indigo-600">
-                新建词条
-              </Link>
               <Link to="/manage" className="text-sm text-gray-600 hover:text-indigo-600">
                 词条管理
               </Link>

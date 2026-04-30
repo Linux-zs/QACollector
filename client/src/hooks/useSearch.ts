@@ -9,6 +9,9 @@ interface Term {
   tags: string;
   created_by: number;
   author_name: string;
+  matchField: 'question' | 'answer' | 'tags';
+  matchedTags?: string[];
+  matchSnippet?: string;
 }
 
 export function useSearch(debounceMs = 300) {

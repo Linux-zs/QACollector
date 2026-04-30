@@ -34,10 +34,10 @@ export const api = {
 
   getLatestTerms: (limit = 20) => request(`/terms/latest?limit=${limit}`),
 
-  filterTerms: (params: { category?: string; tag?: string; limit?: number }) => {
+  filterTerms: (params: { category?: string; tags?: string[]; limit?: number }) => {
     const qs = new URLSearchParams();
     if (params.category) qs.set('category', params.category);
-    if (params.tag) qs.set('tag', params.tag);
+    if (params.tags) params.tags.forEach(t => qs.append('tag', t));
     if (params.limit) qs.set('limit', String(params.limit));
     return request(`/terms/filter?${qs.toString()}`);
   },
@@ -47,6 +47,9 @@ export const api = {
   getTags: () => request('/terms/tags'),
 
   getRecentSearches: () => request('/terms/recent-searches'),
+
+  deleteRecentSearch: (query: string) =>
+    request(`/terms/recent-searches/${encodeURIComponent(query)}`, { method: 'DELETE' }),
 
   getTerm: (id: number) => request(`/terms/${id}`),
 

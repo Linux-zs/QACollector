@@ -21,9 +21,10 @@ export default function TermCard({ term }: { term: Term }) {
         {term.category && (
           <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{term.category}</span>
         )}
-        {tags.map(tag => (
+        {tags.slice(0, 3).map(tag => (
           <span key={tag} className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">#{tag}</span>
         ))}
+        {tags.length > 3 && <span className="text-xs text-gray-400">+{tags.length - 3}</span>}
         <span className="text-xs text-gray-400 ml-auto">{term.author_name}</span>
       </div>
     </Link>
